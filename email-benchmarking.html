@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmarking de E-mail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f2f0ec;
+    --border: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --text: #1a1917;
+    --text-2: #6b6860;
+    --text-3: #a09d99;
+    --accent: #2a2825;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* SIDEBAR */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 1.5rem 0;
+    position: sticky; top: 0; height: 100vh;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.25rem 1.5rem;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 15px; font-weight: 600; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .icon {
+    width: 28px; height: 28px; background: var(--accent);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff;
+  }
+
+  .sidebar-section {
+    padding: 1rem 1.25rem 0.25rem;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-3);
+  }
+
+  .sidebar-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 1.25rem; font-size: 13px; color: var(--text-2);
+    cursor: pointer; border: none; background: transparent; width: 100%;
+    text-align: left; border-radius: 0; transition: all 0.12s;
+  }
+  .sidebar-item:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-item.active {
+    background: var(--surface2); color: var(--text); font-weight: 500;
+  }
+  .sidebar-item i { font-size: 16px; }
+  .sidebar-badge {
+    margin-left: auto; background: var(--surface2); color: var(--text-3);
+    font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px;
+  }
+  .sidebar-item.active .sidebar-badge { background: var(--accent); color: #fff; }
+
+  .sidebar-footer {
+    margin-top: auto; padding: 1rem 1.25rem 0;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0.875rem 2rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 1rem; }
+  .breadcrumb { font-size: 12px; color: var(--text-3); display: flex; align-items: center; gap: 4px; }
+  .breadcrumb span { color: var(--text); font-weight: 500; font-size: 14px; }
+
+  .view-switcher { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; }
+  .view-btn {
+    border: none; background: transparent; padding: 5px 10px;
+    color: var(--text-2); border-radius: 6px; cursor: pointer;
+    font-size: 13px; display: flex; align-items: center; gap: 5px;
+    transition: all 0.12s; font-family: inherit;
+  }
+  .view-btn.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .view-btn i { font-size: 15px; }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+    border: 1px solid var(--border-mid); background: var(--surface);
+    color: var(--text-2); transition: all 0.12s; font-weight: 500;
+  }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #3d3b38; color: #fff; }
+  .btn i { font-size: 15px; }
+
+  /* FILTERS */
+  .filters {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .filter-group { display: flex; align-items: center; gap: 6px; }
+  .filter-label { font-size: 12px; color: var(--text-3); font-weight: 500; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-2); font-size: 12px; padding: 4px 10px; border-radius: 20px;
+    cursor: pointer; transition: all 0.12s; font-family: inherit; font-weight: 500;
+  }
+  .chip:hover { border-color: var(--border-mid); color: var(--text); }
+  .chip.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 2rem 0; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem;
+  }
+  .stat-label { font-size: 11px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 600; color: var(--text); line-height: 1; margin-bottom: 4px; }
+  .stat-delta { font-size: 11px; color: #2d7a4f; display: flex; align-items: center; gap: 3px; }
+  .stat-delta.neg { color: #c0392b; }
+
+  /* CONTENT */
+  .content { padding: 1.25rem 2rem 2rem; flex: 1; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 8px;
+    margin: 1.5rem 0 0.75rem; cursor: pointer; user-select: none;
+    padding: 6px 0;
+  }
+  .section-header i.toggle { font-size: 14px; color: var(--text-3); transition: transform 0.2s; }
+  .section-header.collapsed i.toggle { transform: rotate(-90deg); }
+  .section-pill {
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+  }
+  .section-count { font-size: 12px; color: var(--text-3); }
+
+  /* GRID */
+  .email-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .email-grid.hidden, .section-body.hidden { display: none; }
+
+  .email-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .email-card:hover {
+    transform: translateY(-3px); border-color: var(--border-mid);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.07);
+  }
+
+  .email-preview {
+    height: 130px; padding: 14px; display: flex; flex-direction: column; gap: 5px;
+    position: relative;
+  }
+  .ep-bar { height: 8px; border-radius: 2px; }
+  .ep-img { flex: 1; border-radius: 5px; min-height: 0; }
+  .ep-line { height: 6px; border-radius: 2px; }
+  .ep-cta { height: 16px; width: 55px; border-radius: 3px; align-self: center; margin-top: 3px; }
+
+  .email-info { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+  .email-brand { font-size: 13px; font-weight: 600; color: var(--text); }
+  .email-desc { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+  .email-tags { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .etag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+
+  /* LIST */
+  #list-view { display: none; }
+  #list-view.active { display: block; }
+
+  .data-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .data-table th {
+    text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-3); border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.06em; background: var(--surface2);
+  }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; font-size: 13px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tbody tr { cursor: pointer; transition: background 0.1s; }
+  .data-table tbody tr:hover td { background: var(--surface2); }
+  .or-badge { font-weight: 600; color: #2d7a4f; font-family: 'DM Mono', monospace; }
+  .ctr-badge { font-weight: 600; color: #185FA5; font-family: 'DM Mono', monospace; }
+
+  /* DETAIL PANEL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 50; }
+  .overlay.open { display: block; }
+
+  .detail-panel {
+    position: fixed; top: 0; right: -440px; width: 420px; height: 100vh;
+    background: var(--surface); border-left: 1px solid var(--border);
+    z-index: 60; overflow-y: auto; display: flex; flex-direction: column;
+    transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .detail-panel.open { right: 0; }
+
+  .dp-header {
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
+  }
+  .dp-close { border: none; background: transparent; cursor: pointer; color: var(--text-3); font-size: 20px; padding: 2px; }
+  .dp-close:hover { color: var(--text); }
+
+  .dp-preview {
+    margin: 1.25rem 1.5rem; height: 180px; border-radius: var(--radius);
+    border: 1px solid var(--border); display: flex; flex-direction: column;
+    gap: 7px; padding: 18px; overflow: hidden;
+  }
+
+  .dp-body { padding: 0 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .dp-title { font-size: 18px; font-weight: 600; }
+  .dp-sub { font-size: 13px; color: var(--text-2); margin-top: 3px; }
+
+  .dp-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dp-metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .dp-metric-label { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dp-metric-value { font-size: 16px; font-weight: 600; color: var(--text); margin-top: 3px; font-family: 'DM Mono', monospace; }
+
+  .dp-notes { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: var(--text-2); line-height: 1.65; }
+  .dp-notes-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 6px; }
+
+  .dp-actions { display: flex; flex-direction: column; gap: 6px; }
+  .dp-actions .btn { justify-content: center; }
+
+  /* ADD FORM */
+  .add-form-area { margin-top: 1.5rem; }
+  .add-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px dashed var(--border-mid); background: transparent;
+    color: var(--text-3); font-size: 13px; padding: 7px 14px;
+    border-radius: var(--radius-sm); cursor: pointer; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .add-btn:hover { background: var(--surface2); color: var(--text); border-style: solid; }
+
+  .add-form {
+    display: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.5rem; margin-top: 1rem;
+  }
+  .add-form.open { display: block; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-input, .form-select, .form-textarea {
+    border: 1px solid var(--border-mid); background: var(--bg);
+    color: var(--text); border-radius: var(--radius-sm); padding: 8px 10px;
+    font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.12s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 70px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 1.25rem; justify-content: flex-end; }
+
+  /* Color scheme pills */
+  .color-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-dot {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.12s;
+  }
+  .color-dot:hover { transform: scale(1.15); }
+  .color-dot.selected { border-color: var(--text); }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .detail-panel { width: 100%; right: -100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon"><i class="ti ti-mail-forward" style="font-size:15px;"></i></div>
+      EmailBench
+    </div>
+
+    <div class="sidebar-section">Visualizações</div>
+    <button class="sidebar-item active" onclick="setSidebarView('all', this)">
+      <i class="ti ti-layout-grid"></i> Todos os layouts
+      <span class="sidebar-badge" id="sb-all">18</span>
+    </button>
+    <button class="sidebar-item" onclick="setSidebarView('Promocional', this)">
+      <i class="ti ti-tag"></i> Promocional
+      <span class="sidebar-badge">5</span>
+    </button>
+    <button class="sidebar-item" onclick="setSidebarView('Transacional', this)">
+      <i class="ti ti-receipt"></i> Transacional
+      <span class="sidebar-badge">4</span>
+    </button>
+    <button class="sidebar-item" onclick="setSidebarView('Onboarding', this)">
+      <i class="ti ti-user-check"></i> Onboarding
+      <span class="sidebar-badge">5</span>
+    </button>
+    <button class="sidebar-item" onclick="setSidebarView('Newsletter', this)">
+      <i class="ti ti-news"></i> Newsletter
+      <span class="sidebar-badge">4</span>
+    </button>
+
+    <div class="sidebar-section" style="margin-top:0.5rem;">Setores</div>
+    <button class="sidebar-item" onclick="setSidebarSetor('E-commerce', this)">
+      <i class="ti ti-shopping-bag"></i> E-commerce
+    </button>
+    <button class="sidebar-item" onclick="setSidebarSetor('SaaS', this)">
+      <i class="ti ti-device-desktop"></i> SaaS
+    </button>
+    <button class="sidebar-item" onclick="setSidebarSetor('Fintech', this)">
+      <i class="ti ti-currency-dollar"></i> Fintech
+    </button>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-item" onclick="openAddForm()">
+        <i class="ti ti-plus"></i> Adicionar layout
+      </button>
+      <button class="sidebar-item" onclick="exportCSV()">
+        <i class="ti ti-download"></i> Exportar CSV
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <i class="ti ti-home" style="font-size:13px;"></i>
+          <i class="ti ti-chevron-right" style="font-size:12px;"></i>
+          <span>Benchmarking de E-mail</span>
+        </div>
+      </div>
+      <div class="view-switcher">
+        <button class="view-btn active" onclick="setView('gallery', this)">
+          <i class="ti ti-layout-grid"></i> Galeria
+        </button>
+        <button class="view-btn" onclick="setView('list', this)">
+          <i class="ti ti-list"></i> Lista
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button class="btn" onclick="document.getElementById('search').focus()">
+          <i class="ti ti-search"></i> Buscar
+        </button>
+        <input id="search" type="text" placeholder="Buscar marca..." style="
+          border: 1px solid var(--border-mid); background: var(--bg); color: var(--text);
+          border-radius: var(--radius-sm); padding: 6px 12px; font-size: 13px;
+          font-family: inherit; outline: none; width: 160px;
+        " oninput="applyFilters()">
+        <button class="btn btn-primary" onclick="openAddForm()">
+          <i class="ti ti-plus"></i> Novo layout
+        </button>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">Tipo</span>
+        <button class="chip active" onclick="filterTipo('todos', this)">Todos</button>
+        <button class="chip" onclick="filterTipo('Promocional', this)">Promocional</button>
+        <button class="chip" onclick="filterTipo('Transacional', this)">Transacional</button>
+        <button class="chip" onclick="filterTipo('Onboarding', this)">Onboarding</button>
+        <button class="chip" onclick="filterTipo('Newsletter', this)">Newsletter</button>
+      </div>
+      <div class="filter-group" style="margin-left: auto;">
+        <span class="filter-label">Setor</span>
+        <button class="chip active" onclick="filterSetor('todos', this)">Todos</button>
+        <button class="chip" onclick="filterSetor('E-commerce', this)">E-commerce</button>
+        <button class="chip" onclick="filterSetor('SaaS', this)">SaaS</button>
+        <button class="chip" onclick="filterSetor('Fintech', this)">Fintech</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats-row">
+      <div class="stat">
+        <div class="stat-label">Layouts catalogados</div>
+        <div class="stat-value" id="st-total">18</div>
+        <div class="stat-delta"><i class="ti ti-trending-up" style="font-size:12px;"></i> +3 esta semana</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Média taxa de abertura</div>
+        <div class="stat-value">34,2%</div>
+        <div class="stat-delta"><i class="ti ti-trending-up" style="font-size:12px;"></i> acima da média do setor</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Média de CTR</div>
+        <div class="stat-value">4,8%</div>
+        <div class="stat-delta neg"><i class="ti ti-trending-down" style="font-size:12px;"></i> indústria: 5,3%</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Marcas analisadas</div>
+        <div class="stat-value">11</div>
+        <div class="stat-delta"><i class="ti ti-building" style="font-size:12px;"></i> B2B e B2C</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- GALLERY VIEW -->
+      <div id="gallery-view">
+        <!-- Sections rendered by JS -->
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="list-view">
+        <table class="data-table" style="margin-top:1.25rem;">
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Subtipo</th>
+              <th>Tipo</th>
+              <th>Setor</th>
+              <th>Taxa de Abertura</th>
+              <th>CTR</th>
+              <th>Destaque</th>
+            </tr>
+          </thead>
+          <tbody id="list-body"></tbody>
+        </table>
+      </div>
+
+      <!-- ADD FORM -->
+      <div class="add-form-area">
+        <button class="add-btn" onclick="openAddForm()">
+          <i class="ti ti-plus"></i> Adicionar novo layout
+        </button>
+        <div class="add-form" id="add-form">
+          <div style="font-size:15px;font-weight:600;margin-bottom:1rem;">Novo layout de e-mail</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Marca *</label>
+              <input class="form-input" id="f-brand" placeholder="ex: Spotify" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subtipo *</label>
+              <input class="form-input" id="f-subtype" placeholder="ex: Reativação de usuários" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo *</label>
+              <select class="form-select" id="f-tipo">
+                <option value="">Selecione...</option>
+                <option>Promocional</option>
+                <option>Transacional</option>
+                <option>Onboarding</option>
+                <option>Newsletter</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Setor *</label>
+              <select class="form-select" id="f-setor">
+                <option value="">Selecione...</option>
+                <option>E-commerce</option>
+                <option>SaaS</option>
+                <option>Fintech</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Taxa de abertura</label>
+              <input class="form-input" id="f-or" placeholder="ex: 34%" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">CTR</label>
+              <input class="form-input" id="f-ctr" placeholder="ex: 4,5%" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Destaque</label>
+              <input class="form-input" id="f-dest" placeholder="ex: Layout minimalista" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cor do card</label>
+              <div class="color-picker" id="color-picker">
+                <div class="color-dot selected" style="background:#FAECE7;" data-color="#FAECE7" data-accent="#D85A30" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#EEEDFE;" data-color="#EEEDFE" data-accent="#534AB7" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#E6F1FB;" data-color="#E6F1FB" data-accent="#185FA5" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#EAF3DE;" data-color="#EAF3DE" data-accent="#3B6D11" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#E1F5EE;" data-color="#E1F5EE" data-accent="#0F6E56" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#FBEAF0;" data-color="#FBEAF0" data-accent="#993556" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#FAEEDA;" data-color="#FAEEDA" data-accent="#854F0B" onclick="selectColor(this)"></div>
+                <div class="color-dot" style="background:#F1EFE8;" data-color="#F1EFE8" data-accent="#444441" onclick="selectColor(this)"></div>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Observações</label>
+              <textarea class="form-textarea" id="f-notes" placeholder="Insights sobre o layout, estratégia de copy, boas práticas observadas..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" onclick="closeAddForm()">Cancelar</button>
+            <button class="btn btn-primary" onclick="addEmail()"><i class="ti ti-plus"></i> Adicionar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY + DETAIL PANEL -->
+<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+
+<div class="detail-panel" id="detail-panel">
+  <div class="dp-header">
+    <div>
+      <div class="dp-title" id="dp-brand">—</div>
+      <div class="dp-sub" id="dp-type">—</div>
+    </div>
+    <button class="dp-close" onclick="closeDetail()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="dp-preview" id="dp-preview"></div>
+  <div class="dp-body">
+    <div class="dp-metrics" id="dp-metrics"></div>
+    <div>
+      <div class="dp-notes-label">Observações</div>
+      <div class="dp-notes" id="dp-notes"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let emails = [
+  { brand:'Shopify Store', type:'Flash Sale', setor:'E-commerce', tipo:'Promocional', or:'34%', ctr:'3,2%', dest:'Urgência com timer', bg:'#FAECE7', accent:'#D85A30', notes:'Layout hero image + CTA grande. Excelente uso de urgência. Assunto com emoji aumentou OR em 8%.' },
+  { brand:'Zara', type:'Lançamento Coleção', setor:'E-commerce', tipo:'Promocional', or:'41%', ctr:'5,1%', dest:'Estética editorial', bg:'#E6F1FB', accent:'#185FA5', notes:'Imagem full-width centralizada. Copy minimalista. Sem desconto explícito — foco em desejo.' },
+  { brand:'Nubank', type:'Cashback Especial', setor:'Fintech', tipo:'Promocional', or:'38%', ctr:'7,0%', dest:'Personalização', bg:'#EEEDFE', accent:'#534AB7', notes:'Personalizado com nome e valor real de cashback. CTA direto para app.' },
+  { brand:'Amazon', type:'Prime Day Teaser', setor:'E-commerce', tipo:'Promocional', or:'29%', ctr:'4,4%', dest:'Antecipação', bg:'#F1EFE8', accent:'#2C2C2A', notes:'Sequência de 3 e-mails. Teaser 48h antes aumentou CTR no e-mail principal.' },
+  { brand:'iFood', type:'Cupom de Desconto', setor:'E-commerce', tipo:'Promocional', or:'38%', ctr:'9,2%', dest:'CTA contextual', bg:'#EAF3DE', accent:'#3B6D11', notes:'Horário de envio (11h30–12h) crucial. Copy orientado à fome. CTR excelente.' },
+  { brand:'Mercado Livre', type:'Confirmação de Pedido', setor:'E-commerce', tipo:'Transacional', or:'72%', ctr:'11%', dest:'Cross-sell no rodapé', bg:'#F1EFE8', accent:'#444441', notes:'E-mail transacional com módulo de recomendação. Maior CTR da amostra.' },
+  { brand:'Nubank', type:'Fatura disponível', setor:'Fintech', tipo:'Transacional', or:'68%', ctr:'4,8%', dest:'Layout centrado', bg:'#EEEDFE', accent:'#534AB7', notes:'UX limpa, acesso rápido ao PDF. Dark mode nativo.' },
+  { brand:'Notion', type:'Convite para workspace', setor:'SaaS', tipo:'Transacional', or:'—', ctr:'52%', dest:'CTR excepcional', bg:'#E1F5EE', accent:'#0F6E56', notes:'CTA único, acima da dobra. Copy de valor social ("X convidou você").' },
+  { brand:'Stripe', type:'Recibo de pagamento', setor:'SaaS', tipo:'Transacional', or:'61%', ctr:'2,1%', dest:'Confiança e clareza', bg:'#F1EFE8', accent:'#2C2C2A', notes:'Tipografia monoespaçada para valores. Sem distrações. Referência em confiança.' },
+  { brand:'Slack', type:'Boas-vindas', setor:'SaaS', tipo:'Onboarding', or:'58%', ctr:'21%', dest:'CTA principal único', bg:'#E1F5EE', accent:'#0F6E56', notes:'Apenas 1 CTA. Copy foca no valor imediato. GIF animado aumentou CTR 14%.' },
+  { brand:'HubSpot', type:'Checklist de setup', setor:'SaaS', tipo:'Onboarding', or:'51%', ctr:'18%', dest:'Progresso visual', bg:'#E6F1FB', accent:'#185FA5', notes:'Checklist interativo. Sequência de 5 e-mails com progresso. Alta retenção.' },
+  { brand:'Figma', type:'Primeiro projeto', setor:'SaaS', tipo:'Onboarding', or:'52%', ctr:'27%', dest:'Ação imediata', bg:'#EEEDFE', accent:'#534AB7', notes:'Redireciona direto ao editor. Reduz fricção. Thumbnail do template criado.' },
+  { brand:'Neon', type:'Ativar conta', setor:'Fintech', tipo:'Onboarding', or:'63%', ctr:'44%', dest:'Urgência suave', bg:'#EAF3DE', accent:'#27500A', notes:'"Sua conta expira em 3 dias" — urgência sem pressão excessiva. Excelente resultado.' },
+  { brand:'Magazine Luiza', type:'Cadastro completo', setor:'E-commerce', tipo:'Onboarding', or:'45%', ctr:'16%', dest:'Gamificação', bg:'#FBEAF0', accent:'#993556', notes:'Barra de progresso de perfil. Benefícios desbloqueados. Engajamento alto.' },
+  { brand:'Morning Brew', type:'Newsletter diária', setor:'SaaS', tipo:'Newsletter', or:'42%', ctr:'8%', dest:'Tom editorial', bg:'#F1EFE8', accent:'#444441', notes:'Layout de jornal. Humor e personalidade. OR acima da média do setor (22%).' },
+  { brand:'The Hustle', type:'Resumo semanal', setor:'SaaS', tipo:'Newsletter', or:'38%', ctr:'6%', dest:'Digestibilidade', bg:'#E6F1FB', accent:'#185FA5', notes:'Bullet points curtos. Imagens mínimas. Rápido de ler em mobile.' },
+  { brand:'Substack', type:'Digest mensal', setor:'E-commerce', tipo:'Newsletter', or:'31%', ctr:'6%', dest:'Curadoria clara', bg:'#EEEDFE', accent:'#534AB7', notes:'3 artigos em destaque. Visual limpo. Eficiente para audiência fiel.' },
+  { brand:'Economatica', type:'Market update', setor:'Fintech', tipo:'Newsletter', or:'29%', ctr:'3%', dest:'Dados em destaque', bg:'#EAF3DE', accent:'#27500A', notes:'Tabelas e gráficos inline. Audiência técnica. Renderiza bem no Outlook.' },
+];
+
+const tipoColors = {
+  'Promocional': { bg:'#FAECE7', text:'#993C1D' },
+  'Transacional': { bg:'#E6F1FB', text:'#0C447C' },
+  'Onboarding': { bg:'E1F5EE', text:'#085041' },
+  'Newsletter': { bg:'#FAEEDA', text:'#633806' },
+};
+const tipoLabels = { 'Promocional':'Promo', 'Transacional':'Trans.', 'Onboarding':'Onb.', 'Newsletter':'News' };
+
+let activeFilters = { tipo: 'todos', setor: 'todos', search: '' };
+let currentView = 'gallery';
+let selectedColor = { color: '#FAECE7', accent: '#D85A30' };
+
+function renderCard(e, idx) {
+  const tc = tipoColors[e.tipo] || { bg:'#F1EFE8', text:'#444441' };
+  return `
+    <div class="email-card" onclick="openDetail(${idx})" data-tipo="${e.tipo}" data-setor="${e.setor}">
+      <div class="email-preview" style="background:${e.bg};">
+        <div class="ep-bar" style="background:${e.accent};opacity:0.5;width:65%;"></div>
+        <div class="ep-img" style="background:${e.accent};opacity:0.2;"></div>
+        <div class="ep-line" style="background:${e.accent};opacity:0.35;"></div>
+        <div class="ep-line" style="background:${e.accent};opacity:0.35;width:55%;"></div>
+        <div class="ep-cta" style="background:${e.accent};"></div>
+      </div>
+      <div class="email-info">
+        <div class="email-brand">${e.brand}</div>
+        <div class="email-desc">${e.type}</div>
+        <div class="email-tags">
+          <span class="etag" style="background:${tc.bg};color:${tc.text};">${tipoLabels[e.tipo]||e.tipo}</span>
+          <span class="etag" style="background:#EAF3DE;color:#27500A;">OR ${e.or}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+const sections = [
+  { tipo: 'Promocional', label: 'Promocional', color: '#FAECE7', text: '#993C1D' },
+  { tipo: 'Transacional', label: 'Transacional', color: '#E6F1FB', text: '#0C447C' },
+  { tipo: 'Onboarding', label: 'Onboarding', color: '#E1F5EE', text: '#085041' },
+  { tipo: 'Newsletter', label: 'Newsletter', color: '#FAEEDA', text: '#633806' },
+];
+
+function renderGallery() {
+  const container = document.getElementById('gallery-view');
+  const q = activeFilters.search.toLowerCase();
+  let total = 0;
+  container.innerHTML = sections.map(sec => {
+    const items = emails.filter((e, i) => {
+      const tOk = activeFilters.tipo === 'todos' || e.tipo === activeFilters.tipo;
+      const sOk = activeFilters.setor === 'todos' || e.setor === activeFilters.setor;
+      const qOk = !q || e.brand.toLowerCase().includes(q) || e.type.toLowerCase().includes(q);
+      return e.tipo === sec.tipo && tOk && sOk && qOk;
+    });
+    if ((activeFilters.tipo !== 'todos' && activeFilters.tipo !== sec.tipo) && items.length === 0) return '';
+    total += items.length;
+    const cards = items.map(e => renderCard(e, emails.indexOf(e))).join('');
+    return `
+      <div>
+        <div class="section-header" onclick="this.classList.toggle('collapsed'); this.nextElementSibling.classList.toggle('hidden')">
+          <i class="ti ti-chevron-down toggle"></i>
+          <span class="section-pill" style="background:${sec.color};color:${sec.text};">${sec.label}</span>
+          <span class="section-count">${items.length} layout${items.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="section-body email-grid">${cards || '<p style="color:var(--text-3);font-size:13px;padding:0.5rem 0;">Nenhum resultado</p>'}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('st-total').textContent = total;
+}
+
+function renderList() {
+  const q = activeFilters.search.toLowerCase();
+  const filtered = emails.filter((e, i) => {
+    const tOk = activeFilters.tipo === 'todos' || e.tipo === activeFilters.tipo;
+    const sOk = activeFilters.setor === 'todos' || e.setor === activeFilters.setor;
+    const qOk = !q || e.brand.toLowerCase().includes(q) || e.type.toLowerCase().includes(q);
+    return tOk && sOk && qOk;
+  });
+  document.getElementById('list-body').innerHTML = filtered.map(e => {
+    const idx = emails.indexOf(e);
+    return `<tr onclick="openDetail(${idx})">
+      <td style="font-weight:500;">${e.brand}</td>
+      <td>${e.type}</td>
+      <td>${e.tipo}</td>
+      <td>${e.setor}</td>
+      <td class="or-badge">${e.or}</td>
+      <td class="ctr-badge">${e.ctr}</td>
+      <td style="color:var(--text-2);">${e.dest}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('st-total').textContent = filtered.length;
+}
+
+function applyFilters() {
+  activeFilters.search = document.getElementById('search').value;
+  if (currentView === 'gallery') renderGallery();
+  else renderList();
+}
+
+function filterTipo(val, el) {
+  document.querySelectorAll('.filters .chip').forEach(c => {
+    if (c.getAttribute('onclick') && c.getAttribute('onclick').includes('filterTipo')) c.classList.remove('active');
+  });
+  el.classList.add('active');
+  activeFilters.tipo = val;
+  applyFilters();
+}
+
+function filterSetor(val, el) {
+  document.querySelectorAll('.filters .chip').forEach(c => {
+    if (c.getAttribute('onclick') && c.getAttribute('onclick').includes('filterSetor')) c.classList.remove('active');
+  });
+  el.classList.add('active');
+  activeFilters.setor = val;
+  applyFilters();
+}
+
+function setSidebarView(val, el) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  activeFilters.tipo = val === 'all' ? 'todos' : val;
+  activeFilters.setor = 'todos';
+  document.querySelectorAll('.filters .chip').forEach(c => {
+    if (c.getAttribute('onclick') && c.getAttribute('onclick').includes('filterTipo')) {
+      c.classList.toggle('active', c.textContent.trim() === 'Todos' || c.textContent.trim() === val);
+    }
+  });
+  applyFilters();
+}
+
+function setSidebarSetor(val, el) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  activeFilters.setor = val;
+  activeFilters.tipo = 'todos';
+  applyFilters();
+}
+
+function setView(v, el) {
+  currentView = v;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (v === 'gallery') {
+    document.getElementById('gallery-view').style.display = '';
+    document.getElementById('list-view').classList.remove('active');
+    renderGallery();
+  } else {
+    document.getElementById('gallery-view').style.display = 'none';
+    document.getElementById('list-view').classList.add('active');
+    renderList();
+  }
+}
+
+function openDetail(idx) {
+  const e = emails[idx];
+  document.getElementById('dp-brand').textContent = e.brand;
+  document.getElementById('dp-type').textContent = e.type + ' · ' + e.tipo + ' · ' + e.setor;
+  document.getElementById('dp-preview').style.background = e.bg;
+  document.getElementById('dp-preview').innerHTML = `
+    <div style="height:14px;background:${e.accent};opacity:0.45;border-radius:3px;width:60%;"></div>
+    <div style="flex:1;background:${e.accent};opacity:0.18;border-radius:6px;min-height:0;"></div>
+    <div style="height:8px;background:${e.accent};opacity:0.3;border-radius:2px;"></div>
+    <div style="height:8px;background:${e.accent};opacity:0.3;border-radius:2px;width:70%;"></div>
+    <div style="height:24px;background:${e.accent};border-radius:4px;width:50%;margin:4px auto 0;"></div>
+  `;
+  document.getElementById('dp-metrics').innerHTML = `
+    <div class="dp-metric"><div class="dp-metric-label">Taxa de abertura</div><div class="dp-metric-value">${e.or}</div></div>
+    <div class="dp-metric"><div class="dp-metric-label">CTR</div><div class="dp-metric-value">${e.ctr}</div></div>
+    <div class="dp-metric"><div class="dp-metric-label">Setor</div><div class="dp-metric-value" style="font-family:inherit;font-size:14px;">${e.setor}</div></div>
+    <div class="dp-metric"><div class="dp-metric-label">Destaque</div><div class="dp-metric-value" style="font-family:inherit;font-size:12px;font-weight:500;">${e.dest}</div></div>
+  `;
+  document.getElementById('dp-notes').textContent = e.notes;
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function openAddForm() {
+  document.getElementById('add-form').classList.add('open');
+  document.getElementById('add-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function closeAddForm() { document.getElementById('add-form').classList.remove('open'); }
+
+function selectColor(el) {
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedColor = { color: el.dataset.color, accent: el.dataset.accent };
+}
+
+function addEmail() {
+  const brand = document.getElementById('f-brand').value.trim();
+  const type = document.getElementById('f-subtype').value.trim();
+  const tipo = document.getElementById('f-tipo').value;
+  const setor = document.getElementById('f-setor').value;
+  if (!brand || !type || !tipo || !setor) { alert('Preencha os campos obrigatórios: Marca, Subtipo, Tipo e Setor.'); return; }
+  emails.push({
+    brand, type, tipo, setor,
+    or: document.getElementById('f-or').value || '—',
+    ctr: document.getElementById('f-ctr').value || '—',
+    dest: document.getElementById('f-dest').value || '—',
+    bg: selectedColor.color,
+    accent: selectedColor.accent,
+    notes: document.getElementById('f-notes').value || 'Sem observações.',
+  });
+  ['f-brand','f-subtype','f-or','f-ctr','f-dest','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-tipo').value = '';
+  document.getElementById('f-setor').value = '';
+  closeAddForm();
+  renderGallery();
+}
+
+function exportCSV() {
+  const header = ['Marca','Subtipo','Tipo','Setor','OR','CTR','Destaque','Observações'];
+  const rows = emails.map(e => [e.brand,e.type,e.tipo,e.setor,e.or,e.ctr,e.dest,e.notes].map(v => `"${v}"`).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'email-benchmarking.csv';
+  a.click();
+}
+
+renderGallery();
+</script>
+</body>
+</html>
